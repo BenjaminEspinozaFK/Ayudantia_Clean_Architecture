@@ -1,0 +1,26 @@
+{
+  "name": "clean-backend",
+  "main": "src/server.ts",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "seed": "tsx prisma/seed.ts",
+    "prisma": "prisma",
+    "migrate": "npx prisma migrate dev",
+    "generate": "npx prisma generate"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.0.0",
+    "cors": "^2.8.5",
+    "express": "^4.18.2"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.18",
+    "@types/express": "^5.0.1",
+    "prisma": "^5.0.0",
+    "tsx": "^4.19.4",
+    "typescript": "^5.0.0"
+  }
+}
