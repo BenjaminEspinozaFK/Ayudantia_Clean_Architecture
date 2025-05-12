@@ -30,7 +30,7 @@ countryRouter.get("/", async (_req, res) => {
 countryRouter.get('/:id', async (req: any, res: any) => {
   const id = req.params.id
 
-  if (isNaN(id)) {
+  if (!id) {
     return res.status(400).json({ error: "ID inválido" })
   }
 
@@ -61,7 +61,7 @@ countryRouter.put("/:id", async (req: any, res: any) => {
   const id = req.params.id
   const { name } = req.body
 
-  if (isNaN(id) || !name) {
+  if (!id || !name) {
     return res.status(400).json({ error: "Datos inválidos" })
   }
 
@@ -77,7 +77,7 @@ countryRouter.put("/:id", async (req: any, res: any) => {
 countryRouter.delete("/:id", async (req: any, res: any) => {
   const id = req.params.id
 
-  if (isNaN(id)) {
+  if (!id) {
     return res.status(400).json({ error: "ID inválido" })
   }
 
