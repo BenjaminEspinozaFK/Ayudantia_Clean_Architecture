@@ -1,4 +1,4 @@
-import { Country } from "../entities/Country"
+import { Country } from "@/domain/entities/Country"
 
 export interface CountryRepository {
   getAll(): Promise<Country[]>

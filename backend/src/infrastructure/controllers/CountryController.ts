@@ -1,90 +1,75 @@
-import express from "express"
-import { PrismaCountryRepository } from "../repositories/PrismaCountryRepository"
-import { GetAllCountries } from "../../application/usecases/GetAllCountries"
-import { CreateCountry } from "../../application/usecases/CreateCountry"
-import { GetCountryById } from "../../application/usecases/GetCountryById"
-import { UpdateCountry } from "../../application/usecases/UpdateCountry"
-import { DeleteCountry } from "../../application/usecases/DeleteCountry"
-
-const repo = new PrismaCountryRepository()
-const getAllCountries = new GetAllCountries(repo)
-const getCountryById = new GetCountryById(repo)
-const createCountry = new CreateCountry(repo)
-const updateCountry = new UpdateCountry(repo)
-const deleteCountry = new DeleteCountry(repo)
-
+import { Response } from "express"
+import { GetAllCountries } from "@/application/usecases/GetAllCountries"
+import { GetCountryById } from "@/application/usecases/GetCountryById"
+import { CreateCountry } from "@/application/usecases/CreateCountry"
+import { UpdateCountry } from "@/application/usecases/UpdateCountry"
+import { DeleteCountry } from "@/application/usecases/DeleteCountry"
+import { injectable, inject } from "tsyringe"
+import {
+  JsonController,
+  Get,
+  Post,
+  Put,
+  Delete,
+  Param,
+  Body,
+  Res,
+  HttpCode,
+} from "routing-controllers"
 //GET /countries
 //GET /countries/:id
 //POST /countries
 //PUT	/countries/:id
 //DELETE	/countries/:id
-export const countryRouter = express.Router()
+//Decorators
+@injectable()
+@JsonController("/countries")
+export class CountryController {
+  constructor(
+    @inject("GetAllCountries") private getAllUseCase: GetAllCountries,
+    @inject("GetCountryById") private getCountryByIdUseCase: GetCountryById,
+    @inject("CreateCountry") private createCountryUseCase: CreateCountry,
+    @inject("UpdateCountry") private updateCountryUseCase: UpdateCountry,
+    @inject("DeleteCountry") private deleteCountryUseCase: DeleteCountry
+  ) { }
 
-// Obtenemos todos los Paises //
-countryRouter.get("/", async (_req, res) => {
-  const countries = await getAllCountries.execute()
-  res.json(countries)
-})
-
-// Obtenemos paises por ID  //
-countryRouter.get('/:id', async (req: any, res: any) => {
-  const id = req.params.id
-
-  if (!id) {
-    return res.status(400).json({ error: "ID inválido" })
+  @Get("/")
+  async getAllCountries(@Res() res: Response) {
+    const countries = await this.getAllUseCase.execute()
+    return res.json(countries)
   }
 
-  const country = await getCountryById.execute(id)
-
-  if (!country) {
-    return res.status(404).json({ error: "País no encontrado" })
+  @Get("/:id")
+  async getByIdCountry(@Param("id") id: string, @Res() res: Response) {
+    const country = await this.getCountryByIdUseCase.execute(id)
+    if (!country) return res.status(404).json({ error: "País no encontrado" })
+    return res.json(country)
   }
 
-  res.json(country)
-})
-
-// Creamos un nuevo Pais //
-countryRouter.post("/", async (req: any, res: any) => {
-
-  const { name } = req.body
-
-  if (!name) {
-    return res.status(400).json({ error: "Falta el nombre del pais" })
+  @Post("/")
+  @HttpCode(201)
+  async createCountry(@Body() body: any, @Res() res: Response) {
+    if (!body.name) return res.status(400).json({ error: "Falta el nombre" })
+    const created = await this.createCountryUseCase.execute(body.name)
+    return res.json(created)
   }
 
-  const country = await createCountry.execute(name)
-  res.status(201).json(country)
-})
-
-// Actualizar país
-countryRouter.put("/:id", async (req: any, res: any) => {
-  const id = req.params.id
-  const { name } = req.body
-
-  if (!id || !name) {
-    return res.status(400).json({ error: "Datos inválidos" })
+  @Put("/:id")
+  async updateCountry(@Param("id") id: string, @Body() body: any, @Res() res: Response) {
+    if (!body.name) return res.status(400).json({ error: "Falta el nombre" })
+    const updated = await this.updateCountryUseCase.execute(id, body.name)
+    if (!updated) return res.status(404).json({ error: "País no encontrado" })
+    return res.json(updated)
   }
 
-  const updated = await updateCountry.execute(id, name)
-  if (!updated) {
-    return res.status(404).json({ error: "País no encontrado" })
+  @Delete("/:id")
+  @HttpCode(204)
+  async deleteCountry(@Param("id") id: string, @Res() res: Response) {
+    try {
+      await this.deleteCountryUseCase.execute(id)
+      return res.send()
+    } catch {
+      return res.status(404).json({ error: "País no encontrado" })
+    }
   }
-
-  res.json(updated)
-})
-
-// Eliminar país
-countryRouter.delete("/:id", async (req: any, res: any) => {
-  const id = req.params.id
-
-  if (!id) {
-    return res.status(400).json({ error: "ID inválido" })
-  }
-
-  try {
-    await deleteCountry.execute(id)
-    res.status(204).send()
-  } catch (e) {
-    res.status(404).json({ error: "País no encontrado" })
-  }
-})
+}

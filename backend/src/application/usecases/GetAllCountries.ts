@@ -1,7 +1,9 @@
-import { CountryRepository } from "../repositories/CountryRepository"
+import { CountryRepository } from "@/domain/repositories/CountryRepository"
+import { injectable, inject } from "tsyringe"
 
+@injectable()
 export class GetAllCountries {
-  constructor(private repo: CountryRepository) { }
+  constructor(@inject("CountryRepository") private repo: CountryRepository) { }
 
   async execute() {
     return this.repo.getAll()

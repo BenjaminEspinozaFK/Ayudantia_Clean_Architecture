@@ -1,5 +1,5 @@
-import { CountryRepository } from "../../domain/repositories/CountryRepository"
-import { Country } from "../../domain/entities/Country"
+import { CountryRepository } from "@/domain/repositories/CountryRepository"
+import { Country } from "@/domain/entities/Country"
 import { prisma } from "../prisma/client"
 
 export class PrismaCountryRepository implements CountryRepository {
