@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
-import DataTable from "react-data-table-component";
+import { Table, Button, Input, Space, message } from "antd";
+import type { ColumnsType } from "antd/lib/table";
 
 type Country = { id: string; name: string };
 
@@ -25,11 +26,13 @@ export default function CountryTable() {
     await axios.post("http://localhost:3000/countries", { name: newCountry });
     setNewCountry("");
     fetchCountries();
+    message.success("País agregado");
   };
 
   const handleDelete = async (id: string) => {
     await axios.delete(`http://localhost:3000/countries/${id}`);
     fetchCountries();
+    message.success("País eliminado");
   };
 
   const handleEdit = (id: string, currentName: string) => {
@@ -45,6 +48,7 @@ export default function CountryTable() {
     setEditingId(null);
     setEditedName("");
     fetchCountries();
+    message.success("País actualizado");
   };
 
   const handleCancel = () => {
@@ -52,64 +56,78 @@ export default function CountryTable() {
     setEditedName("");
   };
 
-  const columns = [
+  const columns: ColumnsType<Country> = [
     {
-      name: "ID",
-      selector: (row: Country) => row.id,
-      sortable: true,
-      width: "100px",
+      title: "ID",
+      dataIndex: "id",
+      key: "id",
+      width: 100,
     },
     {
-      name: "Nombre",
-      cell: (row: Country) =>
+      title: "Nombre",
+      dataIndex: "name",
+      key: "name",
+      render: (_text, row) =>
         editingId === row.id ? (
-          <input
+          <Input
             value={editedName}
             onChange={(e) => setEditedName(e.target.value)}
+            size="small"
           />
         ) : (
           row.name
         ),
-      sortable: true,
     },
     {
-      name: "Acciones",
-      cell: (row: Country) =>
+      title: "Acciones",
+      key: "actions",
+      render: (_text, row) =>
         editingId === row.id ? (
-          <>
-            <button onClick={() => handleSave(row.id)}>Guardar</button>
-            <button onClick={handleCancel}>Cancelar</button>
-          </>
+          <Space>
+            <Button
+              type="primary"
+              size="small"
+              onClick={() => handleSave(row.id)}
+            >
+              Guardar
+            </Button>
+            <Button size="small" onClick={handleCancel}>
+              Cancelar
+            </Button>
+          </Space>
         ) : (
-          <>
-            <button onClick={() => handleEdit(row.id, row.name)}>Editar</button>
-            <button onClick={() => handleDelete(row.id)}>Eliminar</button>
-          </>
+          <Space>
+            <Button size="small" onClick={() => handleEdit(row.id, row.name)}>
+              Editar
+            </Button>
+            <Button danger size="small" onClick={() => handleDelete(row.id)}>
+              Eliminar
+            </Button>
+          </Space>
         ),
     },
   ];
 
   return (
-    <div style={{ padding: "1rem" }}>
+    <div style={{ padding: 24 }}>
       <h2>Lista de Países</h2>
-
-      <div style={{ marginBottom: "1rem" }}>
-        <input
+      <Space style={{ marginBottom: 16 }}>
+        <Input
           value={newCountry}
           onChange={(e) => setNewCountry(e.target.value)}
           placeholder="Nuevo país"
+          style={{ width: 200 }}
         />
-        <button onClick={handleAdd}>Agregar</button>
-      </div>
-
-      <DataTable
+        <Button type="primary" onClick={handleAdd}>
+          Agregar
+        </Button>
+      </Space>
+      <Table
         columns={columns}
-        data={countries}
-        pagination
-        highlightOnHover
-        striped
-        responsive
-        noDataComponent="No hay países registrados"
+        dataSource={countries}
+        rowKey="id"
+        pagination={{ pageSize: 8 }}
+        locale={{ emptyText: "No hay países registrados" }}
       />
     </div>
   );
