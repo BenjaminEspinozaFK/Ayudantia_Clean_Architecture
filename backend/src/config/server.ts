@@ -4,9 +4,12 @@ import { setupDependencyInjection } from "@/infrastructure/container"
 import { CountryController } from "@/infrastructure/controllers/CountryController"
 import swaggerUi from "swagger-ui-express"
 import { swaggerSpec } from "./swaggerOptions"
+import { connectRedis } from "@/infrastructure/redis"
 
-export function createApp() {
+export async function createApp() {
     setupDependencyInjection()
+
+    await connectRedis()
 
     const app = createExpressServer({
         controllers: [CountryController],

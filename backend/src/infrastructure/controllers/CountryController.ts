@@ -16,13 +16,7 @@ import {
   Res,
   HttpCode,
 } from "routing-controllers"
-
-/**
- * @swagger
- * tags:
- *   name: Countries
- *   description: API para gestionar países
- */
+import { redisClient } from "@/infrastructure/redis"
 
 @injectable()
 @JsonController("/countries")
@@ -39,28 +33,22 @@ export class CountryController {
    * @swagger
    * /countries:
    *   get:
-   *     summary: Obtiene todos los países
+   *     summary: Obtener todos los países
    *     tags: [Countries]
    *     responses:
    *       200:
    *         description: Lista de países
-   *         content:
-   *           application/json:
-   *             schema:
-   *               type: array
-   *               items:
-   *                 type: object
-   *                 properties:
-   *                   id:
-   *                     type: string
-   *                     example: "123"
-   *                   name:
-   *                     type: string
-   *                     example: "Chile"
    */
   @Get("/")
   async getAllCountries(@Res() res: Response) {
+    const cacheKey = "countries:all"
+    const cached = await redisClient.get(cacheKey)
+
+    if (cached) return res.json(JSON.parse(cached))
+
     const countries = await this.getAllUseCase.execute()
+    await redisClient.set(cacheKey, JSON.stringify(countries), { EX: 60 })
+
     return res.json(countries)
   }
 
@@ -68,29 +56,18 @@ export class CountryController {
    * @swagger
    * /countries/{id}:
    *   get:
-   *     summary: Obtiene un país por ID
+   *     summary: Obtener un país por ID
    *     tags: [Countries]
    *     parameters:
    *       - in: path
    *         name: id
-   *         required: true
    *         schema:
    *           type: string
+   *         required: true
    *         description: ID del país
    *     responses:
    *       200:
    *         description: País encontrado
-   *         content:
-   *           application/json:
-   *             schema:
-   *               type: object
-   *               properties:
-   *                 id:
-   *                   type: string
-   *                   example: "123"
-   *                 name:
-   *                   type: string
-   *                   example: "Chile"
    *       404:
    *         description: País no encontrado
    */
@@ -105,7 +82,7 @@ export class CountryController {
    * @swagger
    * /countries:
    *   post:
-   *     summary: Crea un país nuevo
+   *     summary: Crear un nuevo país
    *     tags: [Countries]
    *     requestBody:
    *       required: true
@@ -113,34 +90,19 @@ export class CountryController {
    *         application/json:
    *           schema:
    *             type: object
-   *             required:
-   *               - name
    *             properties:
    *               name:
    *                 type: string
-   *                 example: "Argentina"
    *     responses:
    *       201:
-   *         description: País creado exitosamente
-   *         content:
-   *           application/json:
-   *             schema:
-   *               type: object
-   *               properties:
-   *                 id:
-   *                   type: string
-   *                   example: "124"
-   *                 name:
-   *                   type: string
-   *                   example: "Argentina"
-   *       400:
-   *         description: Falta el nombre
+   *         description: País creado
    */
   @Post("/")
   @HttpCode(201)
   async createCountry(@Body() body: any, @Res() res: Response) {
     if (!body.name) return res.status(400).json({ error: "Falta el nombre" })
     const created = await this.createCountryUseCase.execute(body.name)
+    await redisClient.del("countries:all")
     return res.json(created)
   }
 
@@ -148,43 +110,26 @@ export class CountryController {
    * @swagger
    * /countries/{id}:
    *   put:
-   *     summary: Actualiza un país existente
+   *     summary: Actualizar un país existente
    *     tags: [Countries]
    *     parameters:
    *       - in: path
    *         name: id
-   *         required: true
    *         schema:
    *           type: string
-   *         description: ID del país a actualizar
+   *         required: true
    *     requestBody:
    *       required: true
    *       content:
    *         application/json:
    *           schema:
    *             type: object
-   *             required:
-   *               - name
    *             properties:
    *               name:
    *                 type: string
-   *                 example: "Uruguay"
    *     responses:
    *       200:
-   *         description: País actualizado correctamente
-   *         content:
-   *           application/json:
-   *             schema:
-   *               type: object
-   *               properties:
-   *                 id:
-   *                   type: string
-   *                   example: "123"
-   *                 name:
-   *                   type: string
-   *                   example: "Uruguay"
-   *       400:
-   *         description: Falta el nombre
+   *         description: País actualizado
    *       404:
    *         description: País no encontrado
    */
@@ -193,6 +138,7 @@ export class CountryController {
     if (!body.name) return res.status(400).json({ error: "Falta el nombre" })
     const updated = await this.updateCountryUseCase.execute(id, body.name)
     if (!updated) return res.status(404).json({ error: "País no encontrado" })
+    await redisClient.del("countries:all")
     return res.json(updated)
   }
 
@@ -200,18 +146,17 @@ export class CountryController {
    * @swagger
    * /countries/{id}:
    *   delete:
-   *     summary: Elimina un país por ID
+   *     summary: Eliminar un país
    *     tags: [Countries]
    *     parameters:
    *       - in: path
    *         name: id
-   *         required: true
    *         schema:
    *           type: string
-   *         description: ID del país a eliminar
+   *         required: true
    *     responses:
    *       204:
-   *         description: País eliminado correctamente
+   *         description: País eliminado
    *       404:
    *         description: País no encontrado
    */
@@ -220,6 +165,7 @@ export class CountryController {
   async deleteCountry(@Param("id") id: string, @Res() res: Response) {
     try {
       await this.deleteCountryUseCase.execute(id)
+      await redisClient.del("countries:all")
       return res.send()
     } catch {
       return res.status(404).json({ error: "País no encontrado" })
