@@ -1,23 +1,22 @@
 import "reflect-metadata"
-import { createExpressServer } from "routing-controllers"
+import express from "express"
 import { setupDependencyInjection } from "@/infrastructure/container"
-import { CountryController } from "@/infrastructure/controllers/CountryController"
-import swaggerUi from "swagger-ui-express"
-import { swaggerSpec } from "./swaggerOptions"
 import { connectRedis } from "@/infrastructure/redis"
+import { useExpressServer } from "routing-controllers"
+import { CountryController } from "@/infrastructure/controllers/CountryController"
+
 
 export async function createApp() {
     setupDependencyInjection()
 
     await connectRedis()
 
-    const app = createExpressServer({
-        controllers: [CountryController],
-        cors: true,
-    })
+    const app = express()
 
-    // Montar Swagger UI en /api-docs
-    app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec))
+    useExpressServer(app, {
+        controllers: [CountryController],
+        cors: true
+    })
 
     return app
 }
