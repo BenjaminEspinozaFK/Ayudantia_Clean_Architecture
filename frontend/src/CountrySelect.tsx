@@ -22,17 +22,32 @@ export default function CountryTable() {
   }, []);
 
   const handleAdd = async () => {
-    if (!newCountry.trim()) return;
-    await axios.post("http://localhost:3000/countries", { name: newCountry });
-    setNewCountry("");
-    fetchCountries();
-    message.success("País agregado");
+    if (!newCountry.trim()) {
+      message.warning("Country name cannot be empty.");
+      return;
+    }
+    try {
+      await axios.post("http://localhost:3000/countries", { name: newCountry });
+      setNewCountry("");
+      fetchCountries();
+      message.success("País agregado");
+    } catch (error: any) {
+      console.error("Error adding country:", error);
+      const errorMessage = error.response?.data?.error || error.message || "Failed to add country.";
+      message.error(errorMessage);
+    }
   };
 
   const handleDelete = async (id: string) => {
-    await axios.delete(`http://localhost:3000/countries/${id}`);
-    fetchCountries();
-    message.success("País eliminado");
+    try {
+      await axios.delete(`http://localhost:3000/countries/${id}`);
+      fetchCountries();
+      message.success("País eliminado");
+    } catch (error: any) {
+      console.error("Error deleting country:", error);
+      const errorMessage = error.response?.data?.error || error.message || "Failed to delete country.";
+      message.error(errorMessage);
+    }
   };
 
   const handleEdit = (id: string, currentName: string) => {
@@ -41,14 +56,23 @@ export default function CountryTable() {
   };
 
   const handleSave = async (id: string) => {
-    if (!editedName.trim()) return;
-    await axios.put(`http://localhost:3000/countries/${id}`, {
-      name: editedName,
-    });
-    setEditingId(null);
-    setEditedName("");
-    fetchCountries();
-    message.success("País actualizado");
+    if (!editedName.trim()) {
+      message.warning("Country name cannot be empty.");
+      return;
+    }
+    try {
+      await axios.put(`http://localhost:3000/countries/${id}`, {
+        name: editedName,
+      });
+      setEditingId(null);
+      setEditedName("");
+      fetchCountries();
+      message.success("País actualizado");
+    } catch (error: any) {
+      console.error("Error updating country:", error);
+      const errorMessage = error.response?.data?.error || error.message || "Failed to update country.";
+      message.error(errorMessage);
+    }
   };
 
   const handleCancel = () => {
