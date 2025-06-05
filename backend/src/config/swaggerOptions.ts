@@ -13,11 +13,11 @@ export const swaggerOptions = {
         },
         servers: [
             {
-                url: "http://localhost:3000", // Cambia el puerto si usas otro
+                url: "http://localhost:3000",
             },
         ],
     },
-    apis: ["./src/infrastructure/controllers/*.ts"], // Ajusta la ruta si es necesario
+    apis: ["./src/infrastructure/controllers/*.ts"],
 };
 
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
