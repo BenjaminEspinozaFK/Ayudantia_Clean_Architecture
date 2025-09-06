@@ -1,6 +1,7 @@
 import { CountryRepository } from "@/domain/repositories/CountryRepository"
 import { Country } from "@/domain/entities/Country"
 import { prisma } from "../prisma/client"
+import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library"
 
 export class PrismaCountryRepository implements CountryRepository {
 
@@ -16,22 +17,73 @@ export class PrismaCountryRepository implements CountryRepository {
   }
 
   async create(name: string): Promise<Country> {
+    if (!name || name.trim() === "") {
+      throw new Error("Country name cannot be empty.")
+    }
+
+    const existingCountry = await prisma.country.findFirst({
+      where: {
+        name: {
+          equals: name,
+          mode: "insensitive",
+        },
+      },
+    })
+
+    if (existingCountry) {
+      throw new Error("Country with this name already exists.")
+    }
+
     const country = await prisma.country.create({ data: { name } })
     return new Country(country.id, country.name)
   }
 
   async update(id: string, name: string): Promise<Country | null> {
-    const updated = await prisma.country.update({
-      where: { id },
-      data: { name },
+    if (!name || name.trim() === "") {
+      throw new Error("Country name cannot be empty.")
+    }
+
+    const existingCountry = await prisma.country.findFirst({
+      where: {
+        name: {
+          equals: name,
+          mode: "insensitive",
+        },
+        id: {
+          not: id,
+        },
+      },
     })
-    return new Country(updated.id, updated.name)
+
+    if (existingCountry) {
+      throw new Error("Another country with this name already exists.")
+    }
+
+    try {
+      const updated = await prisma.country.update({
+        where: { id },
+        data: { name },
+      })
+      return new Country(updated.id, updated.name)
+    } catch (error) {
+      if (error instanceof PrismaClientKnownRequestError && error.code === 'P2025') {
+        throw new Error("Country not found")
+      }
+      throw error
+    }
   }
 
   async delete(id: string): Promise<void> {
-    await prisma.country.delete({
-      where: { id },
-    })
+    try {
+      await prisma.country.delete({
+        where: { id },
+      })
+    } catch (error) {
+      if (error instanceof PrismaClientKnownRequestError && error.code === 'P2025') {
+        throw new Error("Country not found")
+      }
+      throw error
+    }
   }
 
 }
